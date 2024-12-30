@@ -1,0 +1,5 @@
+pymongo
+beautifulsoup4
+requests
+gradio
+lxml
