@@ -21,8 +21,8 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # ============ RSS 來源與開關 ============
 RSS_SOURCES = {
-    "BBC Business": {"url": "https://feeds.bbci.co.uk/news/business/rss.xml", "enabled": 1},
-    "BBC Technology": {"url": "https://feeds.bbci.co.uk/news/technology/rss.xml", "enabled": 1},
+    "BBC Business": {"url": "https://feeds.bbci.co.uk/news/business/rss.xml", "enabled": 0},
+    "BBC Technology": {"url": "https://feeds.bbci.co.uk/news/technology/rss.xml", "enabled": 0},
     "Yahoo Market Global": {"url": "https://tw.stock.yahoo.com/rss?category=intl-markets", "enabled": 0},
     "Yahoo Market TW": {"url": "https://tw.stock.yahoo.com/rss?category=tw-market", "enabled": 0},
     "Yahoo Expert TW": {"url": "https://tw.stock.yahoo.com/rss?category=column", "enabled": 0},
@@ -122,53 +122,53 @@ def scrape_rss_feed(rss_url, content_selector, file_name):
     except Exception as e:
         logger.error(f"RSS 爬取失敗 {rss_url}: {e}")
 
-def upload_file_to_openai(file_path):
-    """上傳檔案到 OpenAI"""
-    try:
-        url = "https://api.openai.com/v1/files"
-        headers = {
-            "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}"
-        }
+# def upload_file_to_openai(file_path):
+#     """上傳檔案到 OpenAI"""
+#     try:
+#         url = "https://api.openai.com/v1/files"
+#         headers = {
+#             "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}"
+#         }
         
-        with open(file_path, "rb") as file:
-            files = {
-                "file": file,
-                "purpose": (None, "assistants")
-            }
-            response = requests.post(url, headers=headers, files=files)
+#         with open(file_path, "rb") as file:
+#             files = {
+#                 "file": file,
+#                 "purpose": (None, "assistants")
+#             }
+#             response = requests.post(url, headers=headers, files=files)
             
-        if response.status_code == 200:
-            file_id = response.json()["id"]
-            logger.info(f"檔案上傳成功，ID: {file_id}")
-            return file_id
-        else:
-            logger.error(f"檔案上傳失敗: {response.status_code}, {response.text}")
-            return None
+#         if response.status_code == 200:
+#             file_id = response.json()["id"]
+#             logger.info(f"檔案上傳成功，ID: {file_id}")
+#             return file_id
+#         else:
+#             logger.error(f"檔案上傳失敗: {response.status_code}, {response.text}")
+#             return None
             
-    except Exception as e:
-        logger.error(f"檔案上傳失敗: {e}")
-        return None
+#     except Exception as e:
+#         logger.error(f"檔案上傳失敗: {e}")
+#         return None
 
-def delete_file_from_openai(file_id):
-    """刪除 OpenAI 上的檔案"""
-    try:
-        url = f"https://api.openai.com/v1/files/{file_id}"
-        headers = {
-            "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}"
-        }
+# def delete_file_from_openai(file_id):
+#     """刪除 OpenAI 上的檔案"""
+#     try:
+#         url = f"https://api.openai.com/v1/files/{file_id}"
+#         headers = {
+#             "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}"
+#         }
         
-        response = requests.delete(url, headers=headers)
+#         response = requests.delete(url, headers=headers)
         
-        if response.status_code == 200:
-            logger.info(f"成功刪除檔案 ID: {file_id}")
-            return True
-        else:
-            logger.error(f"刪除檔案失敗: {response.status_code}, {response.text}")
-            return False
+#         if response.status_code == 200:
+#             logger.info(f"成功刪除檔案 ID: {file_id}")
+#             return True
+#         else:
+#             logger.error(f"刪除檔案失敗: {response.status_code}, {response.text}")
+#             return False
             
-    except Exception as e:
-        logger.error(f"刪除檔案失敗: {e}")
-        return False
+#     except Exception as e:
+#         logger.error(f"刪除檔案失敗: {e}")
+#         return False
 
 # def generate_report_with_openai(file_id, date):
 #     """使用 OpenAI 生成報告"""
@@ -196,7 +196,8 @@ def delete_file_from_openai(file_id):
 #         logger.error(f"報告生成失敗: {e}")
 #         return None
 
-def generate_report_with_openai(file_id, date):
+
+def generate_report_with_openai(date):
     """使用 OpenAI API 生成報告"""
     try:
         url = "https://api.openai.com/v1/chat/completions"
@@ -205,8 +206,14 @@ def generate_report_with_openai(file_id, date):
             "Content-Type": "application/json"
         }
         
+        # 讀取新聞文件內容
+        with open("allnews.txt", "r", encoding="utf-8") as file:
+            news_content = file.read()
+        
         prompt = f"""
-        根據上傳的文件（ID: {file_id}），生成一份全球市場財經投資日報：
+        你是一個股市投資能手,也是能大量閱讀新聞的好手
+        分析以下新聞內容，生成一份全球市場財經投資日報
+        用 繁體中文 輸出
 
         日期：{date}
 
@@ -214,6 +221,21 @@ def generate_report_with_openai(file_id, date):
         1. 今日重點新聞（最重要的10條，請依影響程度排序）
         2. 各新聞的深度分析（包含背景、影響與後果和重要性: ⭐️⭐️⭐️⭐️⭐️）
         3. 對相關股票的潛在影響（請列出具體股票代碼）
+
+        示範
+         1. 美聯儲宣布新一輪利率調整
+            ⭐️⭐️⭐️⭐️⭐️
+            - 背景: 美聯儲在考慮當前經濟增長和通脹壓力後決定調整利率。
+            - 影響與後果: 這可能會導致市場波動，影響美元匯率及全球資本流動。
+            - 潛在影響的股票: JPMorgan Chase (JPM), Goldman Sachs (GS)
+         2. 中國經濟增長數據超預期
+            ⭐️⭐️⭐️⭐️
+            - 背景: 最新數據顯示中國經濟在多項指標上表現強勁。
+            - 影響與後果: 提振亞洲市場信心，可能促使外資流入。
+            - 潛在影響的股票: Alibaba (BABA), Tencent (TCEHY)
+
+        以下是新聞內容：
+        {news_content}
         """
         
         data = {
@@ -235,6 +257,46 @@ def generate_report_with_openai(file_id, date):
     except Exception as e:
         logger.error(f"報告生成失敗: {e}")
         return None
+
+# def generate_report_with_openai(file_id, date):
+#     """使用 OpenAI API 生成報告"""
+#     try:
+#         url = "https://api.openai.com/v1/chat/completions"
+#         headers = {
+#             "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}",
+#             "Content-Type": "application/json"
+#         }
+        
+#         prompt = f"""
+#         根據上傳的文件（ID: {file_id}），生成一份全球市場財經投資日報：
+
+#         日期：{date}
+
+#         請包含以下內容：
+#         1. 今日重點新聞（最重要的10條，請依影響程度排序）
+#         2. 各新聞的深度分析（包含背景、影響與後果和重要性: ⭐️⭐️⭐️⭐️⭐️）
+#         3. 對相關股票的潛在影響（請列出具體股票代碼）
+#         """
+        
+#         data = {
+#             "model": "gpt-4o",
+#             "messages": [{"role": "user", "content": prompt}],
+#             "temperature": 0.7,
+#             "max_tokens": 3000
+#         }
+        
+#         response = requests.post(url, headers=headers, json=data)
+        
+#         if response.status_code == 200:
+#             report = response.json()["choices"][0]["message"]["content"]
+#             return report
+#         else:
+#             logger.error(f"報告生成失敗: {response.status_code}, {response.text}")
+#             return None
+            
+#     except Exception as e:
+#         logger.error(f"報告生成失敗: {e}")
+#         return None
 
 
 
@@ -311,40 +373,28 @@ def main():
         # 獲取今天日期
         today_date = datetime.now().strftime("%Y/%m/%d")
 
-        # 上傳文件到 OpenAI
-        logger.info("上傳文件到 OpenAI...")
-        file_id = upload_file_to_openai("allnews.txt")
-        if not file_id:
-            raise Exception("文件上傳失敗")
+        # 生成報告
+        logger.info("正在生成報告...")
+        report = generate_report_with_openai(today_date)
+        if not report:
+            raise Exception("報告生成失敗")
 
-        try:
-            # 生成報告
-            logger.info("正在生成報告...")
-            report = generate_report_with_openai(file_id, today_date)
-            if not report:
-                raise Exception("報告生成失敗")
+        # 保存到 MongoDB
+        logger.info("保存報告到 MongoDB...")
+        save_to_mongodb(report, "RSS_Feed_Analysis", today_date)
 
-            # 保存到 MongoDB
-            logger.info("保存報告到 MongoDB...")
-            save_to_mongodb(report, "RSS_Feed_Analysis", today_date)
+        # 發送到 Discord
+        logger.info("發送報告到 Discord...")
+        discord_webhook_url = os.getenv("DISCORD_WEBHOOK_URL")
+        send_to_discord(discord_webhook_url, report)
 
-            # 發送到 Discord
-            logger.info("發送報告到 Discord...")
-            discord_webhook_url = os.getenv("DISCORD_WEBHOOK_URL")
-            send_to_discord(discord_webhook_url, report)
+        # 發送電子郵件
+        logger.info("發送電子郵件...")
+        send_email(report, today_date)
 
-            # 發送電子郵件
-            logger.info("發送電子郵件...")
-            send_email(report, today_date)
-
-            # 發送到 Telegram
-            logger.info("發送到 Telegram...")
-            send_telegram_message(report, today_date)
-
-        finally:
-            # 清理：刪除上傳的文件
-            logger.info("清理臨時文件...")
-            delete_file_from_openai(file_id)
+        # 發送到 Telegram
+        logger.info("發送到 Telegram...")
+        send_telegram_message(report, today_date)
 
     except Exception as e:
         logger.error(f"執行過程發生錯誤: {e}")
