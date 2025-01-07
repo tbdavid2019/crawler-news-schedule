@@ -122,85 +122,14 @@ def scrape_rss_feed(rss_url, content_selector, file_name):
     except Exception as e:
         logger.error(f"RSS 爬取失敗 {rss_url}: {e}")
 
-# def upload_file_to_openai(file_path):
-#     """上傳檔案到 OpenAI"""
-#     try:
-#         url = "https://api.openai.com/v1/files"
-#         headers = {
-#             "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}"
-#         }
-        
-#         with open(file_path, "rb") as file:
-#             files = {
-#                 "file": file,
-#                 "purpose": (None, "assistants")
-#             }
-#             response = requests.post(url, headers=headers, files=files)
-            
-#         if response.status_code == 200:
-#             file_id = response.json()["id"]
-#             logger.info(f"檔案上傳成功，ID: {file_id}")
-#             return file_id
-#         else:
-#             logger.error(f"檔案上傳失敗: {response.status_code}, {response.text}")
-#             return None
-            
-#     except Exception as e:
-#         logger.error(f"檔案上傳失敗: {e}")
-#         return None
-
-# def delete_file_from_openai(file_id):
-#     """刪除 OpenAI 上的檔案"""
-#     try:
-#         url = f"https://api.openai.com/v1/files/{file_id}"
-#         headers = {
-#             "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}"
-#         }
-        
-#         response = requests.delete(url, headers=headers)
-        
-#         if response.status_code == 200:
-#             logger.info(f"成功刪除檔案 ID: {file_id}")
-#             return True
-#         else:
-#             logger.error(f"刪除檔案失敗: {response.status_code}, {response.text}")
-#             return False
-            
-#     except Exception as e:
-#         logger.error(f"刪除檔案失敗: {e}")
-#         return False
-
-# def generate_report_with_openai(file_id, date):
-#     """使用 OpenAI 生成報告"""
-#     try:
-#         prompt = f"""
-#         你是一個股市投資能手,也是能大量閱讀新聞的好手
-#         根據上傳的文件（ID: {file_id}），生成一份全球市場財經投資日報：
-
-#         日期：{date}
-
-#         請包含以下內容：
-#         1. 今日重點新聞（最重要的10條，請依影響程度排序）
-#         2. 各新聞的深度分析（包含背景、影響與後果和重要性: ⭐️⭐️⭐️⭐️⭐️）
-#         3. 對相關股票的潛在影響（請列出具體股票代碼）
-#         """
-
-#         response = openai.ChatCompletion.create(
-#             model="gpt-4o",
-#             messages=[{"role": "user", "content": prompt}],
-#             temperature=0.7,
-#             max_tokens=3000
-#         )
-#         return response.choices[0].message.content
-#     except Exception as e:
-#         logger.error(f"報告生成失敗: {e}")
-#         return None
 
 
 def generate_report_with_openai(date):
     """使用 OpenAI API 生成報告"""
     try:
-        url = "https://api.openai.com/v1/chat/completions"
+        # url = "https://api.openai.com/v1/chat/completions"
+        url = "https://gemini.david888.com/v1/chat/completions"        
+
         headers = {
             "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}",
             "Content-Type": "application/json"
@@ -211,38 +140,24 @@ def generate_report_with_openai(date):
             news_content = file.read()
         
         prompt = f"""
-        你是一個股市投資能手,也是能大量閱讀新聞的好手
-        分析以下新聞內容，生成一份全球市場財經投資日報
-        用 繁體中文 輸出
+        
 
         日期：{date}
 
-        請包含以下內容：
-        1. 今日重點新聞（最重要的10條，請依影響程度排序）
-        2. 各新聞的深度分析（包含背景、影響與後果和重要性: ⭐️⭐️⭐️⭐️⭐️）
-        3. 對相關股票的潛在影響（請列出具體股票代碼）
+             以下是所有新聞內容：
+            {news_content}
 
-        示範
-         1. 美聯儲宣布新一輪利率調整
-            ⭐️⭐️⭐️⭐️⭐️
-            - 背景: 美聯儲在考慮當前經濟增長和通脹壓力後決定調整利率。
-            - 影響與後果: 這可能會導致市場波動，影響美元匯率及全球資本流動。
-            - 潛在影響的股票: JPMorgan Chase (JPM), Goldman Sachs (GS)
-         2. 中國經濟增長數據超預期
-            ⭐️⭐️⭐️⭐️
-            - 背景: 最新數據顯示中國經濟在多項指標上表現強勁。
-            - 影響與後果: 提振亞洲市場信心，可能促使外資流入。
-            - 潛在影響的股票: Alibaba (BABA), Tencent (TCEHY)
-
-        以下是新聞內容：
-        {news_content}
+            ------
+                挑選出重點新聞10 條，每條新聞的簡短分析 ：背景、影響與後果、重要性⭐️⭐️⭐️(最多5顆星)、對相關股票的潛在影響（含股票代碼）、新聞來源。  
+        
+                用繁體中文輸出
         """
         
         data = {
-            "model": "gpt-4o",
+            "model": "gemini-2.0-flash-exp",
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.7,
-            "max_tokens": 3000
+            "max_tokens": 960000
         }
         
         response = requests.post(url, headers=headers, json=data)
@@ -258,45 +173,7 @@ def generate_report_with_openai(date):
         logger.error(f"報告生成失敗: {e}")
         return None
 
-# def generate_report_with_openai(file_id, date):
-#     """使用 OpenAI API 生成報告"""
-#     try:
-#         url = "https://api.openai.com/v1/chat/completions"
-#         headers = {
-#             "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}",
-#             "Content-Type": "application/json"
-#         }
-        
-#         prompt = f"""
-#         根據上傳的文件（ID: {file_id}），生成一份全球市場財經投資日報：
 
-#         日期：{date}
-
-#         請包含以下內容：
-#         1. 今日重點新聞（最重要的10條，請依影響程度排序）
-#         2. 各新聞的深度分析（包含背景、影響與後果和重要性: ⭐️⭐️⭐️⭐️⭐️）
-#         3. 對相關股票的潛在影響（請列出具體股票代碼）
-#         """
-        
-#         data = {
-#             "model": "gpt-4o",
-#             "messages": [{"role": "user", "content": prompt}],
-#             "temperature": 0.7,
-#             "max_tokens": 3000
-#         }
-        
-#         response = requests.post(url, headers=headers, json=data)
-        
-#         if response.status_code == 200:
-#             report = response.json()["choices"][0]["message"]["content"]
-#             return report
-#         else:
-#             logger.error(f"報告生成失敗: {response.status_code}, {response.text}")
-#             return None
-            
-#     except Exception as e:
-#         logger.error(f"報告生成失敗: {e}")
-#         return None
 
 
 
@@ -312,7 +189,7 @@ def send_email(report_content, date):
         msg = MIMEMultipart()
         msg["From"] = sender_email
         msg["To"] = ", ".join(to_emails)
-        msg["Subject"] = f"全球市場財經日報 下午 - {date}"
+        msg["Subject"] = f"全球市場財經日報 - {date}"
         msg.attach(MIMEText(report_content, "plain"))
 
         with smtplib.SMTP_SSL(smtp_server, port) as server:
