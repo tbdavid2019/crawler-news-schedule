@@ -157,7 +157,7 @@ def generate_report_with_openai(date):
             "model": "gemini-2.0-flash-exp",
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.7,
-            "max_tokens": 30000
+            "max_tokens": 950000
         }
         
         response = requests.post(url, headers=headers, json=data)
