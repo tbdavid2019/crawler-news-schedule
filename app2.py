@@ -27,7 +27,8 @@ RSS_SOURCES = {
     "Yahoo Market TW": {"url": "https://tw.stock.yahoo.com/rss?category=tw-market", "enabled": 0},
     "Yahoo Expert TW": {"url": "https://tw.stock.yahoo.com/rss?category=column", "enabled": 0},
     "Yahoo Research TW": {"url": "https://tw.stock.yahoo.com/rss?category=research", "enabled": 0},
-    "Yahoo Global finance News": {"url": "https://finance.yahoo.com/news/rssindex", "enabled": 1},
+    "Yahoo Global finance News": {"url": "https://news.yahoo.com/rss/finance", "enabled": 1},
+    "Yahoo TOPSTORY": {"url": "https://news.yahoo.com/rss/topstories", "enabled": 1},
 }
 
 # MongoDB 設置
