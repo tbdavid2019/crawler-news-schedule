@@ -21,14 +21,16 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # ============ RSS 來源與開關 ============
 RSS_SOURCES = {
-    "BBC Business": {"url": "https://feeds.bbci.co.uk/news/business/rss.xml", "enabled": 0},
     "BBC Technology": {"url": "https://feeds.bbci.co.uk/news/technology/rss.xml", "enabled": 0},
     "Yahoo Market Global": {"url": "https://tw.stock.yahoo.com/rss?category=intl-markets", "enabled": 0},
     "Yahoo Market TW": {"url": "https://tw.stock.yahoo.com/rss?category=tw-market", "enabled": 1},
     "Yahoo Expert TW": {"url": "https://tw.stock.yahoo.com/rss?category=column", "enabled": 1},
     "Yahoo Research TW": {"url": "https://tw.stock.yahoo.com/rss?category=research", "enabled": 1},
-    "Yahoo Global finance News": {"url": "https://finance.yahoo.com/news/rssindex", "enabled": 0},
+    "BBC Business": {"url": "https://feeds.bbci.co.uk/news/business/rss.xml", "enabled": 0},
+    "Yahoo Global finance News": {"url": "https://news.yahoo.com/rss/finance", "enabled": 0},
+    "Yahoo TOPSTORY": {"url": "https://news.yahoo.com/rss/topstories", "enabled": 0},
 }
+
 
 # MongoDB 設置
 MONGO_URI = os.getenv("MONGO_URI")
@@ -128,7 +130,8 @@ def generate_report_with_openai(date):
     """使用 OpenAI API 生成報告"""
     try:
         # url = "https://api.openai.com/v1/chat/completions"
-        url = "https://gemini.david888.com/v1/chat/completions"        
+        
+        url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"        
 
         headers = {
             "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}",
@@ -138,26 +141,53 @@ def generate_report_with_openai(date):
         # 讀取新聞文件內容
         with open("allnews.txt", "r", encoding="utf-8") as file:
             news_content = file.read()
-        
+
+
         prompt = f"""
+        您是一位專業的投資顧問，擅長分析財經新聞並提取對投資者有價值的信息。請您分析以下在 {date} 收集的所有財經新聞：
+
+        {news_content}
+
+        ------
+
+        請您從投資顧問的角度，總結今日最重要的10大投資相關重點。這些重點可以是：
+        1. 從多則相關新聞中歸納出的市場趨勢或重大事件
+        2. 單一則具有重大投資意義的新聞
+
+        每個重點請按以下結構分析：
+        1. 【重點標題】- 簡明扼要的總結
+        2. 【事件背景】- 這個事件或趨勢的來龍去脈
+        3. 【影響分析】- 對金融市場、經濟環境或特定行業的潛在影響
+        4. 【投資啟示】- 對投資者的具體建議或應對策略
+        5. 【相關標的】- 受影響的股票、ETF或其他投資工具（請務必包含股票代碼或ETF代碼）
+        6. 【重要性評分】- ⭐️⭐️⭐️⭐️⭐️（1-5顆星）
+        7. 【消息來源】- 引用的具體新聞來源
+
+        請以專業、客觀的口吻撰寫，並確保每個重點分析都有實質的投資參考價值。如果某些投資機會具有時效性，請特別標注。
+
+        請用繁體中文輸出完整分析。
+        """   
+
+        # prompt = f"""
         
 
-        日期：{date}
+        # 日期：{date}
 
-             以下是所有新聞內容：
-            {news_content}
+        #      以下是所有新聞內容：
+        #     {news_content}
 
-            ------
-                挑選出重點新聞10 條，每條新聞的簡短分析 ：背景、影響與後果、重要性⭐️⭐️⭐️(最多5顆星)、對相關股票的潛在影響（含股票代碼）、新聞來源。  
+        #     ------
+        #         綜合所有新聞，整理10條分析(可以多條新聞合併在同一個分析中) ：背景、影響與後果、重要性⭐️⭐️⭐️(最多5顆星)、對相關股票的潛在影響（含股票代碼）、新聞來源。  
+
         
-                用繁體中文輸出
-        """
+        #         用繁體中文輸出
+        # """
         
         data = {
-            "model": "gemini-2.0-flash-exp",
+            "model": "gemini-1.5-pro-latest",
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.7,
-            "max_tokens": 950000
+            "max_tokens": 2000000
         }
         
         response = requests.post(url, headers=headers, json=data)
