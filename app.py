@@ -70,15 +70,36 @@ def save_to_mongodb(report_content, source, date):
     finally:
         client.close()
 
-def send_to_discord(webhook_url, message):
-    """發送訊息到 Discord"""
+def send_to_discord(webhook_url, message, date):
+    """發送訊息到 Discord（以檔案形式）"""
     try:
-        payload = {"content": message}
-        response = requests.post(webhook_url, json=payload)
-        if response.status_code == 204:
-            logger.info("成功發送到 Discord")
+        # 建立檔案名稱，包含日期以便識別
+        file_name = f"台股日報_{date.replace('/', '-')}.txt"
+        
+        # 將報告內容寫入文字檔案
+        with open(file_name, "w", encoding="utf-8") as f:
+            f.write(message)
+        
+        # 準備檔案上傳
+        files = {
+            "file": (file_name, open(file_name, "rb"), "text/plain")
+        }
+        
+        # 可以添加簡短的訊息說明
+        data = {
+            "content": f"台股日報 - {date}"
+        }
+        
+        # 使用 multipart/form-data 發送請求
+        response = requests.post(webhook_url, data=data, files=files)
+        
+        # 關閉檔案
+        files["file"][1].close()
+        
+        if response.status_code == 204 or response.status_code == 200:
+            logger.info("成功發送檔案到 Discord")
         else:
-            logger.error(f"Discord 發送失敗: {response.status_code}")
+            logger.error(f"Discord 檔案發送失敗: {response.status_code}, {response.text}")
     except Exception as e:
         logger.error(f"Discord 發送出錯: {e}")
 
@@ -150,7 +171,7 @@ def generate_report_with_openai(date):
 
         ------
 
-        請您從投資顧問的角度，總結今日最重要的10大投資相關重點。這些重點可以是：
+        請您從投資顧問的角度，總結今日最重要的6大投資相關重點。這些重點可以是：
         1. 從多則相關新聞中歸納出的市場趨勢或重大事件
         2. 單一則具有重大投資意義的新聞
 
@@ -219,7 +240,7 @@ def send_email(report_content, date):
         msg = MIMEMultipart()
         msg["From"] = sender_email
         msg["To"] = ", ".join(to_emails)
-        msg["Subject"] = f"台股市場財經日報 - {date}"
+        msg["Subject"] = f"888台股日報 - {date}"
         msg.attach(MIMEText(report_content, "plain"))
 
         with smtplib.SMTP_SSL(smtp_server, port) as server:
@@ -238,7 +259,7 @@ def send_telegram_message(report_content, date):
 
         # 由於 Telegram 消息長度限制，可能需要分段發送
         max_length = 4096
-        message = f"台股市場財經日報 - {date}\n\n{report_content}"
+        message = f"888台股日報 - {date}\n\n{report_content}"
         
         if len(message) <= max_length:
             payload = {
@@ -293,7 +314,7 @@ def main():
         # 發送到 Discord
         logger.info("發送報告到 Discord...")
         discord_webhook_url = os.getenv("DISCORD_WEBHOOK_URL")
-        send_to_discord(discord_webhook_url, report)
+        send_to_discord(discord_webhook_url, report, today_date)
 
         # 發送電子郵件
         logger.info("發送電子郵件...")
